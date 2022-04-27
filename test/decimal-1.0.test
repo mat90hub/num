@@ -1,0 +1,316 @@
+#!/usr/bin/env tclsh
+#-*- mode: Tcl; coding: utf-8-unix; fill-column: 80; ispell-local-dictionary: "american"; -*-
+
+puts "\n"
+puts "╔═════════════════════════════╗"
+puts "║ *** TEST decimal-1.0.tm *** ║"
+puts "╚═════════════════════════════╝"
+puts "\n"
+
+
+#------------------------------------------------------------------------------
+#  package for testing
+#------------------------------------------------------------------------------
+package require tcltest
+namespace import ::tcltest::*
+if {[llength $argv] > 0} {eval configure $argv}
+configure -verbose pass
+# configure -verbose -line
+# configure -verbose -body
+
+#-------------------------------------------------------------------------------
+# reload package
+#-------------------------------------------------------------------------------
+# Reload a package during debugging, so the last changes saved are made applicable
+# directly without having to resetart the complete session.
+# The path to the package must be in [::tcl::tm::path list] and possible subpath
+# to be precise.
+# As exemple :
+#   reload syndic
+#   reload tab::datatable
+#-------------------------------------------------------------------------------
+# for reloading a package after a debugging
+proc reload pkg {
+    # suppress the class
+    if {[info commands tdomods] eq "tdomods"} {tdomods destroy}
+    # reload the package
+    # eval [package ifneeded $pkg [package require $pkg]]
+    package forget $pkg
+    package require $pkg
+}
+# ------------------------------------------------------------------------------
+
+
+#--------------------------------------------------------------------------
+# updDir path ?level?
+# -------------------------------------------------------------------------
+# Return the path some directories up (only for linux, for windows to be
+# adapted)
+# -------------------------------------------------------------------------
+proc upDir {path {level 1}} {
+    set path [string trimright [file normalize $path] "/"]
+    if {$level > 1} {
+	while {$level > 0} {
+	    set path [string range $path 0 [string last "/" $path]-1]
+	    incr level -1
+	}
+	return $path
+    } {
+	set path [string range $path 0 [string last "/" $path]-1]
+	return $path
+    }
+}
+#--------------------------------------------------------------------------
+
+
+#--------------------------------------------------------------------------
+#  Declare lib for module to be tested if not already done
+#--------------------------------------------------------------------------
+if {[string length [set SCRIPT [info script]]] > 0} {
+    set pwdDir [file dirname [file normalize $SCRIPT]]
+    eval ::tcltest::configure $argv
+} {
+    set pwdDir [pwd]
+}
+# go two step up to get the local tcl module directory
+set libDir [upDir $pwdDir 2]
+
+# adapt library for packages
+if {[lsearch [::tcl::tm::path list] $libDir] < 0} {::tcl::tm::path add $libDir}
+#--------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------------
+# the package to be tested
+package require num::decimal 1.0
+# ------------------------------------------------------------------------------
+
+
+puts "------------------------------------------------------------------------------\n"
+
+puts "┌─────────────────────────────────────┐"
+puts "│ Test procedures from decimal-1.0.tm │"
+puts "└─────────────────────────────────────┘\n"
+
+
+
+# --------------------------------------
+#  decimal get locale
+# --------------------------------------
+
+test getLocale-01: {update the package with locale}\
+    -setup {
+	foreach line [exec locale -k LC_NUMERIC] {
+	    set L [string map {= \ } $line]
+	    array set LOC $L
+	}
+	set check {}
+    }\
+    -body {
+	array set RES [decimal get locale]
+	foreach I [array names RES] {
+	    if {$RES($I) == $LOC($I)} {
+		lappend check ok
+	    } {
+		lappend check nok
+	    }
+	}
+	puts -nonewline $check
+    }\
+    -output {ok ok}
+
+
+# --------------------------------------
+#  decimal style $data
+# --------------------------------------
+
+test style-01.01: {recognize a tcl decimal}\
+    -setup {set data 134.56}\
+    -body {decimal style $data}\
+    -result Tcl_style
+
+test style-01.02: {recognize a us decimal}\
+    -setup {set data "1,134.56"}\
+    -body {decimal style $data}\
+    -result US_style
+
+test style-01.03: {recognize a French decimal}\
+    -setup {set data "1 134,56"}\
+    -body {decimal style $data}\
+    -result French_style
+
+test style-01.04: {recognize a French decimal}\
+    -setup {set data "1134,56"}\
+    -body {decimal style $data}\
+    -result French_style
+
+
+# --------------------------------------
+#  decimal set / get  decimalSep
+# --------------------------------------
+
+test decimalSep-01: {Retrieve the decimalSep used, French style}\
+    -setup {decimal set decimalSep ,}\
+    -body {decimal get decimalSep}\
+    -result ,
+
+test decimalSep-02: {Retrieve the decimalSep used, US style}\
+    -setup {decimal set decimalSep .}\
+    -body {decimal get decimalSep}\
+    -result .
+
+# --------------------------------------
+#  decimal set / get  thousandSep
+# --------------------------------------
+
+test thousandSep-01: {Retrieve the thousandSep used, French style}\
+    -setup {decimal set thousandSep " "}\
+    -body {decimal get thousandSep}\
+    -result " "
+
+test thousandSep-02: {Retrieve the thousandSep used, US style}\
+    -setup {decimal set thousandSep ,}\
+    -body {decimal get thousandSep}\
+    -result ,
+
+# --------------------------------------
+#  decimal set / get accuracy
+# --------------------------------------
+
+test accuracy-01: {Retrieve the accuracy used}\
+    -setup {decimal set accuracy 2}\
+    -body {decimal get accuracy}\
+    -result "2"
+
+test accuracy-02: {Retrieve the accuracy used}\
+    -setup {decimal set accuracy 3}\
+    -body {decimal get accuracy}\
+    -result "3"
+
+# reset package variable to default values
+decimal set thousandSep " "
+decimal set decimalSep ,
+decimal set accuracy 2
+
+
+# --------------------------------------
+# `decimal from double`
+# --------------------------------------
+
+test from.double-01: {Format a decimal value as decimal}\
+    -body {decimal from double 1345.60}\
+    -result "1 345,60"
+
+test from.double-02: {Format an integer value as decimal}\
+    -body {decimal from double 1345}\
+    -result "1 345,00"
+
+
+# --------------------------------------
+# `decimal to double``
+# --------------------------------------
+
+test to.double-01: {Convert an decimal to double}\
+    -body {decimal to double "1 345,60"}\
+    -result 1345.60
+
+
+# --------------------------------------
+# `decimal is formated`
+# --------------------------------------
+
+test is.formatted-01: {Check if a string is a formatted decimal}\
+    -body {decimal is formatted "1 345,60"}\
+    -result true
+
+
+# --------------------------------------
+# `decimal add`
+# --------------------------------------
+
+test add-01: {Add two decimals}\
+    -body {decimal add "134,50" "1 345,45"}\
+    -result "1 479,95"
+
+# --------------------------------------
+# `decimal subFrom`
+# --------------------------------------
+
+test subFrom-01: {Substract two decimals}\
+    -body {decimal subFrom "134.50" "1 345.45"}\
+    -result "-1 210,95"
+
+
+# --------------------------------------
+# `decimal byCoef`
+# --------------------------------------
+test byCoef-01: {Multiply by a coeff}\
+    -body {decimal byCoef -1 "345.45"}\
+    -result "-345,45"
+
+
+# --------------------------------------
+#  test of Regexp
+# --------------------------------------
+
+# --------------------------------------
+#  1. test recognition decimal in French style
+# --------------------------------------
+
+test regexp-01.01 {test decimal with thousands, French style}\
+    -setup {set num "1 343 456,45"}\
+    -body {
+	regexp {\m((\d{0,3}[ ]?)+),?((\d{0,3}[ ]?)*)\M} $num NUM INT X2 DEC X4
+	puts -nonewline "$NUM / $INT / $X2 / $DEC / $X4"
+    }\
+    -output {1 343 456,45 / 1 343 456 /  / 45 / 45}
+
+
+test regexp-01.02 {test simple decimal, French style}\
+    -setup {set num "456,45"}\
+    -body {
+	regexp {\m((\d{0,3}[ ]?)+),?((\d{0,3}[ ]?)*)\M} $num NUM INT X2 DEC X4
+	puts -nonewline "$NUM / $INT / $X2 / $DEC / $X4" 
+    }\
+    -output {456,45 / 456 /  / 45 / 45}
+
+
+test regexp-01.03 {test integer recognition}\
+    -setup {set num 6}\
+    -body {
+	regexp {\m((\d{0,3}[ ]?)+),?((\d{0,3}[ ]?)*)\M} $num NUM INT X2 DEC X4
+	puts -nonewline "$NUM / $INT / $X2 / $DEC / $X4"
+    }\
+    -output {6 / 6 /  /  / }
+
+
+test regexp-01.04 {test recognition with many decimals}\
+    -setup {set num "456,123 435"}\
+    -body {
+	regexp {\m((\d{0,3}[ ]?)+),?((\d{0,3}[ ]?)*)\M} $num NUM INT X2 DEC X4
+	puts -nonewline "$NUM / $INT / $X2 / $DEC / $X4"
+    }\
+    -output {456,123 435 / 456 /  / 123 435 / 435}
+
+test regexp-01.05 {test recognition with many decimals not grouped}\
+    -setup {set num "456,123435"}\
+    -body {
+	regexp {\m((\d{0,3}[ ]?)+),?((\d{0,3}[ ]?)*)\M} $num NUM INT X2 DEC X4
+	puts -nonewline "$NUM / $INT / $X2 / $DEC / $X4"
+    }\
+    -output {456,123435 / 456 /  / 123435 / 435}
+
+
+test regexp-01.06 {test decimal with no figure before coma}\
+    -setup {set num .4}\
+    -body {
+	regexp {\m((\d{0,3}[ ]?)+),?((\d{0,3}[ ]?)*)\M} $num NUM INT X2 DEC X4
+	puts -nonewline "$NUM / $INT / $X2 / $DEC / $X4"
+    }\
+    -output {4 / 4 /  /  / }
+
+
+
+puts "┌─────────────────────┐"
+puts "│ *** END OF TEST *** │"
+puts "└─────────────────────┘"

@@ -1,0 +1,245 @@
+#!/usr/bin/env tclsh
+#-*- mode: Tcl; coding: utf-8-unix; fill-column: 80; ispell-local-dictionary: "american"; -*-
+
+puts "\n"
+puts "╔════════════════════════════╗"
+puts "║ *** TEST amount-1.0.tm *** ║"
+puts "╚════════════════════════════╝"
+puts "\n"
+
+
+#------------------------------------------------------------------------------
+#  package for testing
+#------------------------------------------------------------------------------
+package require tcltest
+namespace import ::tcltest::*
+if {[llength $argv] > 0} {eval configure $argv}
+configure -verbose pass
+# configure -verbose -line
+# configure -verbose -body
+
+#-------------------------------------------------------------------------------
+# reload package
+#-------------------------------------------------------------------------------
+# Reload a package during debugging, so the last changes saved are made applicable
+# directly without having to resetart the complete session.
+# The path to the package must be in [::tcl::tm::path list] and possible subpath
+# to be precise.
+# As exemple :
+#   reload syndic
+#   reload tab::datatable
+#-------------------------------------------------------------------------------
+# for reloading a package after a debugging
+proc reload pkg {
+    # suppress the class
+    if {[info commands tdomods] eq "tdomods"} {tdomods destroy}
+    # reload the package
+    # eval [package ifneeded $pkg [package require $pkg]]
+    package forget $pkg
+    package require $pkg
+}
+# ------------------------------------------------------------------------------
+
+
+#--------------------------------------------------------------------------
+# updDir path ?level?
+# -------------------------------------------------------------------------
+# Return the path some directories up (only for linux, for windows to be
+# adapted)
+# -------------------------------------------------------------------------
+proc upDir {path {level 1}} {
+    set path [string trimright [file normalize $path] "/"]
+    if {$level > 1} {
+	while {$level > 0} {
+	    set path [string range $path 0 [string last "/" $path]-1]
+	    incr level -1
+	}
+	return $path
+    } {
+	set path [string range $path 0 [string last "/" $path]-1]
+	return $path
+    }
+}
+#--------------------------------------------------------------------------
+
+
+#--------------------------------------------------------------------------
+#  Declare lib for module to be tested if not already done
+#--------------------------------------------------------------------------
+if {[string length [set SCRIPT [info script]]] > 0} {
+    set pwdDir [file dirname [file normalize $SCRIPT]]
+    eval ::tcltest::configure $argv
+} {
+    set pwdDir [pwd]
+}
+# go two step up to get the local tcl module directory
+set libDir [upDir $pwdDir 2]
+
+# adapt library for packages
+if {[lsearch [::tcl::tm::path list] $libDir] < 0} {::tcl::tm::path add $libDir}
+#--------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------------
+# the package to be tested
+package require num::amount 1.0
+# ------------------------------------------------------------------------------
+
+
+puts "------------------------------------------------------------------------------\n"
+
+puts "┌────────────────────────────────────┐"
+puts "│ Test procedures from amount-1.0.tm │"
+puts "└────────────────────────────────────┘\n"
+
+
+# --------------------------------------
+# amount set / get  currency
+# --------------------------------------
+
+test currency01: {Retrieve the currency used} -body {amount get currency} -result €
+test currency02: {Set the currency used} -body {amount set currency $} -result $
+test currency03: {Retrieve the currency used} -body {amount get currency} -result $
+test currency04: {Set the currency used} -body {amount set currency €} -result €
+test currency05: {Retrieve the currency used} -body {amount get currency} -result €
+
+# --------------------------------------
+#  amount set / get  decimalSep
+# --------------------------------------
+
+test decimalSep01: {Retrieve the decimalSep used} -body {amount get decimalSep} -result ,
+test decimalSep02: {Set the decimalSep used} -body {amount set decimalSep .} -result .
+test decimalSep03: {Retrieve the decimalSep used} -body {amount get decimalSep} -result .
+test decimalSep04: {Set the decimalSep used} -body {amount set decimalSep ,} -result ,
+test decimalSep05: {Retrieve the decimalSep used} -body {amount get decimalSep} -result ,
+
+# --------------------------------------
+#  amount set / get  thousandSep
+# --------------------------------------
+
+test thousandSep01: {Retrieve the thousandSep used} -body {amount get thousandSep} -result " "
+test thousandSep02: {Set the thousandSep used} -body {amount set thousandSep .} -result .
+test thousandSep03: {Retrieve the thousandSep used} -body {amount get thousandSep} -result .
+test thousandSep04: {Set the thousandSep used} -body {amount set thousandSep " "} -result " "
+test thousandSep05: {Retrieve the thousandSep used} -body {amount get thousandSep} -result " "
+
+
+# --------------------------------------
+#  amount set / get  currencyAfterValue
+# --------------------------------------
+
+test currencyAfterValue01: {Say if currency is after value} -body {amount get currencyAfterValue} -result true
+test currencyAfterValue02: {Place the currency after value} -body {amount set currencyAfterValue false} -result false
+test currencyAfterValue03: {Say if currency is after value} -body {amount get currencyAfterValue} -result false
+test currencyAfterValue04: {Place the currency after value} -body {amount set currencyAfterValue true} -result true
+test currencyAfterValue05: {Say if currency is after value} -body {amount get currencyAfterValue} -result true
+
+
+# --------------------------------------
+#  amount set / get  fmtStr
+# --------------------------------------
+test fmtStr01: {Retrieve the default formatting string} -body {amount get fmtStr} -result %14s
+test fmtStr02: {Retrieve the formatting of a amount string} -body {amount get fmtStr "1 564.56€"} -result %9s
+test fmtStr03: {Set the default formatting string} -body {amount set fmtStr %5s} -result %5s
+test fmtStr04: {Retrieve the default formatting string} -body {amount get fmtStr} -result %5s
+test fmtStr05: {Set the default formatting string} -body {amount set fmtStr %15s} -result %15s
+
+
+# --------------------------------------
+# `amount from double`
+# --------------------------------------
+
+test from.double1: {Format a decimal value as amount} -body {amount from double 1345.60} -result "1 345,60 €"
+
+test from.double2: {Format an integer value as amount} -body {amount from double 1345} -result "1 345,00 €"
+
+
+# --------------------------------------
+# `amount to double``
+# --------------------------------------
+
+test to.double1: {Convert an amount to double} -body {amount to double "1 345,60 €"} -result 1345.60
+
+
+# --------------------------------------
+# `amount is formated`
+# --------------------------------------
+
+test is.formatted1: {Check if a string is a formatted amount} -body {amount is formatted "1 345,60 €"} -result true
+
+
+# --------------------------------------
+# `amount add`
+# --------------------------------------
+
+test add1: {Add two amounts} -body {amount add "134.50 €" "1 345.45 €"} -result "1 479,95 €"
+
+# --------------------------------------
+# `amount subFrom`
+# --------------------------------------
+
+test subFrom1: {Substract two amounts} -body {amount subFrom "134.50 €" "1 345.45 €"} -result "-1 210,95 €"
+
+# --------------------------------------
+# `amount byCoef`
+
+test byCoef: {Multiply by a coeff} -body {amount byCoef -1 "345.45 €"} -result "-345,45 €"
+
+
+
+# --------------------------------------
+#  test of Regexp
+# --------------------------------------
+
+# List of recongized currencies
+
+set currS [list € $ F £]
+set currL [list EUR USD FR UK]
+
+# --------------------------------------
+#  1. test recognition decimal in French style
+# --------------------------------------
+
+test regexp-01.01: {test recognition of currency}\
+    -setup {set num "1 343 456,45 €"}\
+    -body {
+	regexp -all {((\d{0,3}[ ]?)*),?(\d{0,3}[ ]?)*([€£F$])} $num RES X1 X2 X3 X4 X5
+	puts -nonewline "$RES / $X1 / $X2 / $X3 / $X4 $X5"
+    }\
+    -output {1 343 456,45 € / 1 343 456 / 456 / 45  / € }
+
+
+test regexp-01.02: {test recognition of currency}\
+    -setup {set num "343,45 £"}\
+    -body {
+	regexp -all {((\d{0,3}[ ]?)*),?(\d{0,3}[ ]?)*([€£F$])} $num RES X1 X2 X3 X4 X5
+	puts -nonewline "$RES / $X1 / $X2 / $X3 / $X4 $X5"
+    }\
+    -output {343,45 £ / 343 / 343 / 45  / £ }
+
+
+test regexp-01.03: {test recognition of currency}\
+    -setup {set num ",4556 $"}\
+    -body {
+	regexp -all {((\d{0,3}[ ]?)*),?(\d{0,3}[ ]?)*([€£F$])} $num RES X1 X2 X3 X4 X5
+	puts -nonewline "$RES / $X1 / $X2 / $X3 / $X4 $X5"
+    }\
+    -output {,4556 $ /  /  / 6  / $ }
+
+
+test regexp-01.04: {test recognition of currency}\
+    -setup {set num ",455 645 F"}\
+    -body {
+	regexp -all {((\d{0,3}[ ]?)*),?(\d{0,3}[ ]?)*([€£F$])} $num RES X1 X2 X3 X4 X5
+	puts -nonewline "$RES / $X1 / $X2 / $X3 / $X4 $X5"
+    }\
+    -output {,455 645 F /  /  / 645  / F }
+
+
+
+
+
+
+puts "┌─────────────────────┐"
+puts "│ *** END OF TEST *** │"
+puts "└─────────────────────┘"
