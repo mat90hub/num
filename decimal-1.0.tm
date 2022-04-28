@@ -229,7 +229,7 @@ namespace eval decimal {
     # -------------------------------------------------------------------------------
     # decimal format $data
     # -------------------------------------------------------------------------------
-    # short cut for `decimal from double $data`
+    # shortcut for `decimal from double $data`
     # -------------------------------------------------------------------------------
     proc format data {
 	return [from double $data]

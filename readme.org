@@ -1,0 +1,175 @@
+# -*- coding: utf-8-unix; mode:org; mode: auto-fill; fill-column: 80; ispell-local-dictionary: "american"; -*-
+
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+STARTUP: inlineimages
+#+STARTUP: indent
+
+
+#+TITLE:  Tcl librairies decimal and amount
+#+DATE:   April 2022
+#+AUTHOR: Mathieu Pouit
+#+LANG: en
+
+
+* Table of content                                                      :TOC:
+- [[#the-package-decimal][The package decimal]]
+- [[#the-package-amount][The package amount]]
+
+* The package decimal
+
+The package decimal is meant to handle string representing a decimal value, that
+may not be recognized by default by Tcl as a numeric value.
+
+Tcl recognise integer and double which are made of figures all joint together
+with a point a decimal separator.
+
+There are other representation of decimal values, that can be retrieved in
+particular from a databasis such as Postgresql.
+
+|-----------------+-------------+--------------+-----------|
+| type of decimal | decimal sep | thousand sep | example   |
+|-----------------+-------------+--------------+-----------|
+| Tcl (generic)   | point: .    | nothing      | 12345.67  |
+|-----------------+-------------+--------------+-----------|
+| US              | point: .    | coma: ,      | 1,2345.67 |
+|-----------------+-------------+--------------+-----------|
+| French          | coma: ,     | space:       | 1 2345,67 |
+|-----------------+-------------+--------------+-----------|
+
+The purpose of this package is to gather all useful procedure arround handling
+of such decimal values. The type of thousand and decimal separator is decided at
+the package level.
+
+The procedures of the package are the following ones:
+
+#+begin_example
+#
+# decimal
+#    │
+#    ├── style : recognize the style of decimal
+#    │
+#    ├── get
+#    │    │
+#    │    ├── locale      : get decimal style for locale
+#    │    │
+#    │    ├── decimalSep  : retrieve the decimal separator in use 
+#    │    │
+#    │    ├── thousandSep : retrieve the thousands separator in use
+#    │    │
+#    │    └── accuracy    : get the number of decimal after decimal separator
+#    │
+#    ├── set
+#    │    │
+#    │    ├── decimalSep  : retrieve the decimal separator in use 
+#    │    │
+#    │    ├── thousandSep : retrieve the thousands separator in use
+#    │    │
+#    │    └── accuracy    : get the number of decimal after decimal separator
+#    │
+#    ├── from
+#    │    │
+#    │    └── double : convert a double to an amount
+#    │
+#    ├── format : shortcut for `decimal from double $data`
+#    │
+#    ├── null   :  return the null amount
+#    │
+#    ├── is
+#    │    │
+#    │    └── formatted : true if given string is formatted as an amount
+#    │
+#    ├── to
+#    │    │
+#    │    └── double : convert an amount to a double
+#    │
+#    ├── add    : add two amounts (that can be negative)
+#    │
+#    ├── byCoef : multiply amount by a coefficient (which is a double)
+#    │
+#    └── subFrom : substract two decimals
+#
+#+end_example
+
+
+
+* The package amount
+
+Financial amount can be retrieved in SQL either as double either as string
+representing a financial amount in the local setting (type of decimal separator
+but also currency). The package ~amount~ facilitate the transfer between those
+strings qualified as type '~amount~' with type '~double~' and allow simple
+calculation between ~amounts~ such as additions (and substractions).
+
+The packages ~coddict~ and ~codlist~ allow to do operation either with ~doubles~ or
+with ~amounts~.
+
+The module amount is short and here is its structure and procedures.
+
+The most important procedures of this package are the last ones, giving
+operation s for this new type ~amount~: ~add~, ~byCoef~ (the multiplication has no
+sense).
+
+
+#+begin_example
+#
+# amount
+#    │
+#    ├── get
+#    │    │
+#    │    ├── currency    : retrieve the currency in use
+#    │    │
+#    │    ├── decimalSep  : retrieve the decimal separator in use 
+#    │    │
+#    │    ├── thousandSep : retrieve the thousands separator in use
+#    │    │
+#    │    ├── CurrencyAfterValue : return true if Currency is shown after Value
+#    │    │
+#    │    └── fmtStr : get the fmtStr stored in the name space.
+#    │
+#    ├── set
+#    │    │
+#    │    ├── currency :    set the currency to use
+#    │    │
+#    │    ├── decimalSep  : retrieve the decimal separator in use 
+#    │    │
+#    │    ├── thousandSep : retrieve the thousands separator in use
+#    │    │
+#    │    ├── currencyAfterValue : set Currency after value
+#    │    │
+#    │    ├── currencyBeforeValue : set Currency before value
+#    │    │
+#    │    └── fmtStr : set the fmtStr stored in the name space.
+#    │
+#    ├── null :  return the null amount
+#    │
+#    ├── from
+#    │    │
+#    │    └── double : convert a double to an amount
+#    │
+#    ├── is
+#    │    │
+#    │    └── formatted : true if given string is formatted as an amount
+#    │
+#    ├── to
+#    │    │
+#    │    └── double : convert an amount to a double
+#    │
+#    ├── add    : add two amounts (that can be negative)
+#    │
+#    ├── byCoef : multiply amount by a coefficient (which is a double)
+#    │
+#    └── subFrom : substract two decimals
+#
+#+end_example
+
+Instead of defining two functions, one could definie the procedure ~amount expr~
+which would do any mathematical operation, by just doing a translation of its
+argument and then applying ~expr~ to the translated part. One has just to define a
+rule and some additional checks for the multiplying operation (and other
+similar), which has no sense between two ~amount~, but which can be allowed if one
+of the element is an integer or a real.
+
+This is an idea to improve this package further.
+
+
