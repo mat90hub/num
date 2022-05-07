@@ -72,10 +72,8 @@ if {[string length [set SCRIPT [info script]]] > 0} {
 } {
     set pwdDir [pwd]
 }
-# go two step up to get the local tcl module directory
+# add the library n-2 to the list of accessible modiles
 set libDir [upDir $pwdDir 2]
-
-# adapt library for packages
 if {[lsearch [::tcl::tm::path list] $libDir] < 0} {::tcl::tm::path add $libDir}
 #--------------------------------------------------------------------------
 
