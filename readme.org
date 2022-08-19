@@ -14,32 +14,93 @@
 
 * Table of content                                                      :TOC:
 - [[#the-package-decimal][The package decimal]]
+  - [[#aim-of-the-package][Aim of the package]]
+  - [[#basic-use][Basic use]]
+  - [[#content-of-the-package][Content of the package]]
 - [[#the-package-amount][The package amount]]
 
 * The package decimal
 
-The package decimal is meant to handle string representing a decimal value, that
-may not be recognized by default by Tcl as a numeric value.
+** Aim of the package
 
-Tcl recognise integer and double which are made of figures all joint together
-with a point a decimal separator.
+The package decimal is meant to handle strings representing decimal values, but
+that may not be recognized by Tcl as a numeric value. Tcl recognises numerical
+values such as ~integer~ and ~double~. They are strings made of figures optionally
+joint together with a point as decimal separator.
 
 There are other representation of decimal values, that can be retrieved in
-particular from a databasis such as Postgresql.
+particular from a databasis such as Postgresql handling local particularities.
 
 |-----------------+-------------+--------------+-----------|
 | type of decimal | decimal sep | thousand sep | example   |
 |-----------------+-------------+--------------+-----------|
 | Tcl (generic)   | point: .    | nothing      | 12345.67  |
 |-----------------+-------------+--------------+-----------|
-| US              | point: .    | coma: ,      | 1,2345.67 |
+| English         | point: .    | coma: ,      | 1,2345.67 |
 |-----------------+-------------+--------------+-----------|
 | French          | coma: ,     | space:       | 1 2345,67 |
 |-----------------+-------------+--------------+-----------|
 
 The purpose of this package is to gather all useful procedure arround handling
-of such decimal values. The type of thousand and decimal separator is decided at
-the package level.
+of such decimal values.
+
+
+** Basic use
+
+Suppose you load the package locally,
+
+#+begin_src tcl
+package require num::decimal 1.0
+#+end_src
+
+you may do translations between these representations in a friendly way.
+
+#+begin_src tcl
+decimal to double "1 345,60"
+#+end_src
+
+#+result
+"1345.00"
+
+
+#+begin_src tcl
+double to decimal "1345.60"
+#+end_src
+
+#+result
+"1 345,00"
+
+
+The type of thousand and decimal separator is decided at
+the package level and can be adapted.
+
+#+begin_src tcl
+decimal set thousandSep ,
+decimal set decimalSep .
+double to decimal "1345.60"
+#+end_src
+
+#+result
+"1,345.00"
+
+The package contains also simple operations between those decimal values.
+
+#+begin_src tcl
+decimal set thousandSep " "
+decimal set decimalSep ,
+decimal expr "134,50 + 1 345,45"
+#+end_src
+
+#+result
+"1 479,95"
+
+Some other basic operations are available and also recognition function. You can
+explore the [[./test/decimal-1.0.test][test file]] for more examples.
+
+Note, that the ~expr~ is a minimal implementation without check of error.
+
+
+** Content of the package
 
 The procedures of the package are the following ones:
 
@@ -83,11 +144,7 @@ The procedures of the package are the following ones:
 #    │    │
 #    │    └── double : convert an amount to a double
 #    │
-#    ├── add    : add two amounts (that can be negative)
-#    │
-#    ├── byCoef : multiply amount by a coefficient (which is a double)
-#    │
-#    └── subFrom : substract two decimals
+#    └── expr    : apply expr to a string written with decimals
 #
 #+end_example
 
@@ -95,21 +152,15 @@ The procedures of the package are the following ones:
 
 * The package amount
 
-Financial amount can be retrieved in SQL either as double either as string
-representing a financial amount in the local setting (type of decimal separator
-but also currency). The package ~amount~ facilitate the transfer between those
-strings qualified as type '~amount~' with type '~double~' and allow simple
-calculation between ~amounts~ such as additions (and substractions).
+This package follows the package decimal by adding the representation of the
+currency for financial values or the unit for string representing
+quantities. Those kind of strings can be retrieved by formatted SQL queries. The
+package ~amount~ facilitates a post-treatment that could be required in your
+program. 
 
-The packages ~coddict~ and ~codlist~ allow to do operation either with ~doubles~ or
-with ~amounts~.
-
-The module amount is short and here is its structure and procedures.
-
-The most important procedures of this package are the last ones, giving
-operation s for this new type ~amount~: ~add~, ~byCoef~ (the multiplication has no
-sense).
-
+This package is organised as the preceding package decimal, so just have a look
+in the preceding chapter to have a basic understanding of it. The internal of
+this package is as following.
 
 #+begin_example
 #
@@ -155,21 +206,7 @@ sense).
 #    │    │
 #    │    └── double : convert an amount to a double
 #    │
-#    ├── add    : add two amounts (that can be negative)
-#    │
-#    ├── byCoef : multiply amount by a coefficient (which is a double)
-#    │
-#    └── subFrom : substract two decimals
+#    └── expr    : apply expr to a string written with amount
 #
 #+end_example
-
-Instead of defining two functions, one could definie the procedure ~amount expr~
-which would do any mathematical operation, by just doing a translation of its
-argument and then applying ~expr~ to the translated part. One has just to define a
-rule and some additional checks for the multiplying operation (and other
-similar), which has no sense between two ~amount~, but which can be allowed if one
-of the element is an integer or a real.
-
-This is an idea to improve this package further.
-
 

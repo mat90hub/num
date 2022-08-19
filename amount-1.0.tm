@@ -338,30 +338,23 @@ namespace eval amount {
 	}
 	#------------------------------------------------------------------------------
     }
+    
+    #------------------------------------------------------------------------------
+    # apply expr function to strexpr as if it would made of normal doubles
+    #------------------------------------------------------------------------------
+    # the user is responsible of doing an operation making sense (one multiply
+    # and amount with an integer or a double only !)
+    #------------------------------------------------------------------------------
+    proc expr strexpr {
+	variable ::amount::decimalSep
+	variable ::amount::thousandSep
+	variable ::amount::currency
 	
-    #------------------------------------------------------------------------------
-    # amount add $data1 $data2
-    #------------------------------------------------------------------------------
-    proc add {data1 data2} {
-	return [from double [expr [to double $data1] + [to double $data2]]]	
-    }
-    #------------------------------------------------------------------------------
-
-    #------------------------------------------------------------------------------
-    # amount byCoef $data1 $data2
-    #------------------------------------------------------------------------------
-    # multiply amount by a coefficient (a double)
-    #------------------------------------------------------------------------------
-    proc byCoef {coef data} {
-	return [from double [expr $coef * [to double $data]]]
-    }
-    #------------------------------------------------------------------------------
-
-    #------------------------------------------------------------------------------
-    # amount subFrom $data1 $data2
-    #------------------------------------------------------------------------------
-    proc subFrom {data1 data2} {
-	return [from double [expr [to double $data1] - [to double $data2]]]
+	regsub -all $thousandSep $strexpr "" strexpr
+	regsub -all $currency    $strexpr "" strexpr
+	regsub -all $decimalSep  $strexpr "." strexpr
+		
+	return [from double [::expr $strexpr]]
     }
     #------------------------------------------------------------------------------
 }

@@ -19,27 +19,17 @@ configure -verbose pass
 # configure -verbose -body
 
 #-------------------------------------------------------------------------------
-# reload package
+#  package to support debbuging
 #-------------------------------------------------------------------------------
-# Reload a package during debugging, so the last changes saved are made applicable
-# directly without having to resetart the complete session.
-# The path to the package must be in [::tcl::tm::path list] and possible subpath
-# to be precise.
-# As exemple :
-#   reload syndic
-#   reload tab::datatable
-#-------------------------------------------------------------------------------
+package require log
+::log::lvSuppressLE emergency 0
+
 # for reloading a package after a debugging
 proc reload pkg {
-    # suppress the class
-    if {[info commands tdomods] eq "tdomods"} {tdomods destroy}
-    # reload the package
-    # eval [package ifneeded $pkg [package require $pkg]]
     package forget $pkg
     package require $pkg
 }
 # ------------------------------------------------------------------------------
-
 
 #--------------------------------------------------------------------------
 # updDir path ?level?
@@ -167,21 +157,14 @@ test is.formatted1: {Check if a string is a formatted amount} -body {amount is f
 
 
 # --------------------------------------
-# `amount add`
+# `amount expr`
 # --------------------------------------
 
-test add1: {Add two amounts} -body {amount add "134.50 €" "1 345.45 €"} -result "1 479,95 €"
+test add1: {Add two amounts} -body {amount expr "134.50 € + 1 345.45 €"} -result "1 479,95 €"
 
-# --------------------------------------
-# `amount subFrom`
-# --------------------------------------
+test subFrom1: {Substract two amounts} -body {amount expr "134.50 € - 1 345.45 €"} -result "-1 210,95 €"
 
-test subFrom1: {Substract two amounts} -body {amount subFrom "134.50 €" "1 345.45 €"} -result "-1 210,95 €"
-
-# --------------------------------------
-# `amount byCoef`
-
-test byCoef: {Multiply by a coeff} -body {amount byCoef -1 "345.45 €"} -result "-345,45 €"
+test byCoef: {Multiply by a coeff} -body {amount expr "-1 * 345.45 €"} -result "-345,45 €"
 
 
 
@@ -232,10 +215,6 @@ test regexp-01.04: {test recognition of currency}\
 	puts -nonewline "$RES / $X1 / $X2 / $X3 / $X4 $X5"
     }\
     -output {,455 645 F /  /  / 645  / F }
-
-
-
-
 
 
 puts "┌─────────────────────┐"

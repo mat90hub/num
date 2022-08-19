@@ -18,23 +18,15 @@ configure -verbose pass
 # configure -verbose -line
 # configure -verbose -body
 
+
 #-------------------------------------------------------------------------------
-# reload package
+#  package to support debbuging
 #-------------------------------------------------------------------------------
-# Reload a package during debugging, so the last changes saved are made applicable
-# directly without having to resetart the complete session.
-# The path to the package must be in [::tcl::tm::path list] and possible subpath
-# to be precise.
-# As exemple :
-#   reload syndic
-#   reload tab::datatable
-#-------------------------------------------------------------------------------
+package require log
+::log::lvSuppressLE emergency 0
+
 # for reloading a package after a debugging
 proc reload pkg {
-    # suppress the class
-    if {[info commands tdomods] eq "tdomods"} {tdomods destroy}
-    # reload the package
-    # eval [package ifneeded $pkg [package require $pkg]]
     package forget $pkg
     package require $pkg
 }
@@ -223,34 +215,22 @@ test is.formatted-01: {Check if a string is a formatted decimal}\
 
 
 # --------------------------------------
-# `decimal add`
+#  test of expr
 # --------------------------------------
 
-test add-01: {Add two decimals}\
-    -body {decimal add "134,50" "1 345,45"}\
-    -result "1 479,95"
+test expr-01 {test an addition with expr}\
+    -body {decimal expr "(1250,45 + 85,35) * 2"}\
+    -result "2 671,60"
 
-# --------------------------------------
-# `decimal subFrom`
-# --------------------------------------
-
-test subFrom-01: {Substract two decimals}\
-    -body {decimal subFrom "134.50" "1 345.45"}\
-    -result "-1 210,95"
-
-
-# --------------------------------------
-# `decimal byCoef`
-# --------------------------------------
-test byCoef-01: {Multiply by a coeff}\
-    -body {decimal byCoef -1 "345.45"}\
-    -result "-345,45"
+test expr-02 {test an addition with expr}\
+    -body {decimal expr " 1250 / 2,0 + 1 345,5"}\
+    -result "1 970,50"
 
 
 # --------------------------------------
 #  test of Regexp
 # --------------------------------------
-
+	
 # --------------------------------------
 #  1. test recognition decimal in French style
 # --------------------------------------
